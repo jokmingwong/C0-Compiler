@@ -1,0 +1,20 @@
+int m;
+int factorial()
+{
+    int result;
+    result=fun2();
+    while(m)
+    {
+        result=result*m;
+        m=m-1;
+        }
+    return (result);
+}
+int fun2()
+{
+    return (1);
+}
+void main()
+{
+    scanf(m);
+}
