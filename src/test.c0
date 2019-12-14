@@ -1,0 +1,6 @@
+int main(){
+    const int a=15;
+    char b;
+    scan(b);
+    return 0;
+}
