@@ -2,6 +2,7 @@ int m;
 int factorial()
 {
     int result;
+    int q= 0x100;
     result=1;
     while(m)
     {
@@ -13,6 +14,6 @@ int factorial()
 }
 void main()
 { 
-    scanf(m);
+    scan(m);
     printf(factorial());
 }

@@ -12,27 +12,27 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Title：词法分析器
- * Description：分析源程序的每一个字符，组合成单词，将单词转化成符号
+ * Title：Lexer
  * Created by Adam on 13/12/2019
  */
 public class Lexer {
-    // Store every C0 in the list
-    private List<String> sourceCodeLineList;
+    // Store every C0 code in a list
+    private List<String> CodeLineList;
 
     // The number of the C0 line
     private int lineSize = 0;
 
     // Max line of the code
-    private static final int MAX_LINE_SIZE = 300;
+    private static final int MAX_LINE_SIZE = 5000;
 
     // -1 means end
     private int lineNumber;
+    private char currentChar;
 
     // -1 means end
     private int position;
 
-    private String currentLine;
+    private String currentLineContent;
     // A map to store keywords and the all operators
     private Map<String,Symbol> keywordsMap;
     private Map<String,Symbol> operatorsMap;
@@ -78,26 +78,27 @@ public class Lexer {
         operatorsMap.put("}",Symbol.RIGHT_BRACE);
         operatorsMap.put(",",Symbol.COMMA);
         operatorsMap.put(";",Symbol.SEMICOLON);
+
+
     }
     public List<String> getSourceCodeLineList() {
-        return sourceCodeLineList;
+        return CodeLineList;
     }
 
     /**
      * Open a file to analyse
      * @param pathname the name of the file
-     * @throw Exception
      */
     public void openFile(String pathname) throws Exception{
         File file = new File(pathname);
         BufferedReader bufferedReader;
         bufferedReader = new BufferedReader(new FileReader(file));
         String line;
-        sourceCodeLineList = new ArrayList<>();
+        CodeLineList = new ArrayList<>();
         while((line = bufferedReader.readLine())!=null) {
-            sourceCodeLineList.add(line);
+            CodeLineList.add(line);
         }
-        lineSize = sourceCodeLineList.size();
+        lineSize = CodeLineList.size();
         if (lineSize > MAX_LINE_SIZE) {
             lineSize = 0;
             throw new Exception("The code is too long!");
@@ -106,13 +107,14 @@ public class Lexer {
             lineSize = 0;
             throw new Exception("The code cannot be empty!");
         }
-        currentLine = sourceCodeLineList.get(0);
+        // Get the first line of the code
+        currentLineContent = CodeLineList.get(0);
     }
 
-    // 前移位置
-    private void nextChar() {
+    // Move to next char
+    private void moveToNextChar() {
         // Change the line
-        if (position >= currentLine.length()-1) {
+        if (position >= currentLineContent.length()-1) {
             lineNumber++;
             position = 0;
         }
@@ -126,84 +128,125 @@ public class Lexer {
             position = -1;
             return;
         }
-        currentLine = sourceCodeLineList.get(lineNumber);
+        // In case that code change the line
+        currentLineContent = CodeLineList.get(lineNumber);
+    }
+
+    private char getCurrentChar(){
+        return currentLineContent.charAt(position);
+    }
+
+    private char getNextChar(){
+        int l=lineNumber,p=position;
+        if (p >= currentLineContent.length()-1) {
+            return '\n';
+        }
+        // In the same line, move to the next char
+        else {
+            return currentLineContent.charAt(p+1);
+        }
     }
 
     /**
-     * Get a new word
-     * @return new word
-     * @throws Exception
+     * Analyse a token form a line string
+     * @return new token
      */
     public Word getToken() throws Exception {
         Word word = new Word();
+        // Judge weather the code ends
         if (lineNumber ==-1 && position==-1) {
-            word.setType(Symbol.END); // Stop
+            word.setType(Symbol.END);
             return word;
         }
         StringBuilder wordValue = new StringBuilder("");
         // Remove the empty line
-        while (currentLine.length()==0) {
+        while (currentLineContent.length()==0) {
             lineNumber++;
-            currentLine = sourceCodeLineList.get(lineNumber);
+            currentLineContent = CodeLineList.get(lineNumber);
         }
-        char currentChar = currentLine.charAt(position);
-        // Filter the space and the tab
-        while (currentChar == ' ' || currentChar == '\t') {
-            nextChar();
-            currentChar = currentLine.charAt(position);
+        char currentChar = getCurrentChar();
+        // Filter the space and the tab, do not solve the '\n'
+        while (currentChar == ' ' || currentChar == '\t' ||currentChar=='\r') {
+            moveToNextChar();
+            currentChar = getCurrentChar();
         }
-        //System.out.println("("+ lineNumber + "," + position +")"+" 字符：" + currentLine.charAt(position));
+
         if (Character.isLetter(currentChar))
         {
             // identifier
             do
             {
                 wordValue.append(currentChar);
-                nextChar();
+                moveToNextChar();
                 if (lineNumber ==-1 && position==-1) {
+                    // Not empty
                     if (!("".equals(wordValue.toString()))) {
                         word.setType(Symbol.IDENTIFIER);
                         word.setValue(wordValue.toString());
                     } else {
-                        word.setType(Symbol.END); //终止位置，终止
+                        word.setType(Symbol.END);
                     }
                     return word;
                 }
-                currentChar = currentLine.charAt(position);
-            } while (currentChar >= 'a'&&currentChar <= 'z' || currentChar >= '0'&&currentChar <= '9');
+                currentChar = getCurrentChar();
+            } while (Character.isLetter(currentChar) || Character.isDigit(currentChar));
             
-            //Judge it is keyword
+            //Judge weather is keyword
             word.setType(keywordsMap.getOrDefault(wordValue.toString(),Symbol.IDENTIFIER));
         } 
         else {
             // digit?
             if (Character.isDigit(currentChar))
             {
-                do
-                {
+                if(currentChar=='0' && (getNextChar()=='x'||getNextChar()=='X')) {
                     wordValue.append(currentChar);
-                    nextChar();
-                    if (lineNumber ==-1 && position==-1) {
-                        word.setType(Symbol.END);
-                        return word;
+                    // Add char 'x' or 'X' into the number
+                    moveToNextChar();
+                    currentChar=getCurrentChar();
+                    wordValue.append(currentChar);
+
+                    // Add the number behind the char 'X' or 'x'
+                    moveToNextChar();
+                    currentChar=getCurrentChar();
+                    while (Character.isDigit(currentChar)) {
+                        wordValue.append(currentChar);
+                        moveToNextChar();
+                        if(lineNumber==-1 && position == -1) {
+                            word.setType(Symbol.END);
+                            return word;
+                        }
+                        currentChar=getCurrentChar();
                     }
-                    currentChar = currentLine.charAt(position);
-                } while (Character.isDigit(currentChar));
+                }
+                else {
+                    do {
+                        wordValue.append(currentChar);
+                        moveToNextChar();
+                        // Maybe the code is end
+                        if (lineNumber == -1 && position == -1) {
+                            word.setType(Symbol.END);
+                            return word;
+                        }
+                        currentChar = getCurrentChar();
+                    } while (Character.isDigit(currentChar));
+                }
                 word.setType(Symbol.NUMBER);
             }
             else {
-                // Check weather the char is operator
+                // Check the char is operator
                 wordValue.append(currentChar);
                 word.setType(operatorsMap.getOrDefault(wordValue.toString(),Symbol.NUL));
-                nextChar();
+                moveToNextChar();
             }
         }
         word.setValue(wordValue.toString());
         return word;
     }
+    /*
     public String getPosition() {
         return "The line:" + (lineNumber+1);
     }
+    */
 
     public int getLineNumber() {
         return lineNumber;
