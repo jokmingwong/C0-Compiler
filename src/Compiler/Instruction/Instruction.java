@@ -1,21 +1,21 @@
 package Compiler.Instruction;
 
 /**
- * Title：指令（目标代码）格式
+ * Title：Target style
  * Description：
- * Created by Myth on 4/8/2017.
+ * Created by Adam on 12/18/2019
  */
 public class Instruction {
     private InstructionType name;  //指令名字
     private int layer; //层数（0全局变量、1当前层的变量）
-    private int third; //指令的第三个数
+    private int thirdNumber; //指令的第三个数
 
     public Instruction() {}
 
     public Instruction(InstructionType name, int layer, int third) {
         this.name = name;
         this.layer = layer;
-        this.third = third;
+        this.thirdNumber = third;
     }
 
     public InstructionType getName() {
@@ -35,15 +35,15 @@ public class Instruction {
     }
 
     public int getThird() {
-        return third;
+        return thirdNumber;
     }
 
     public void setThird(int third) {
-        this.third = third;
+        this.thirdNumber = third;
     }
 
     @Override
     public String toString() {
-        return name + " " + layer + " " +third;
+        return name + " " + layer + " " +thirdNumber;
     }
 }

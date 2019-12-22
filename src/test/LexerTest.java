@@ -1,7 +1,6 @@
 package test;
 
-import Compiler.common.Symbol;
-import Compiler.common.Word;
+import Compiler.common.TokenType;
 import Compiler.lexer.Lexer;
 import org.junit.Test;
 
@@ -13,7 +12,7 @@ public class LexerTest {
     @Test
     public void openFile() throws Exception {
         Lexer lexer = new Lexer();
-        lexer.openFile( "src/test/source/factorial.txt"); //注意路径
+        lexer.analyseFile( "src/test/source/factorial.txt");
         List<String> list = lexer.getSourceCodeLineList();
         for (String s: list) {
             System.out.println(s);
@@ -23,10 +22,10 @@ public class LexerTest {
     @Test
     public void getSymbol() throws Exception {
         Lexer lexer = new Lexer();
-        lexer.openFile("src/test/source/factorial.txt");
+        lexer.analyseFile("src/test/source/factorial.txt");
         Word word = new Word();
-        while (word.getType()!= Symbol.END) {
-            word = lexer.getToken();
+        while (word.getType()!= TokenType.END) {
+            word = lexer.nextToken();
             System.out.println(word);
         }
     }

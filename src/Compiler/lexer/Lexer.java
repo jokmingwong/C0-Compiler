@@ -1,254 +1,442 @@
 package Compiler.lexer;
 
-import Compiler.common.Symbol;
-import Compiler.common.Word;
+import Compiler.Instruction.Interpreter;
+import Compiler.common.ErrorMsg;
+import Compiler.common.Pair;
+import Compiler.common.Token;
+import Compiler.common.TokenType;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.Scanner;
+
+import static java.lang.Character.*;
 
 /**
  * Title：Lexer
  * Created by Adam on 13/12/2019
  */
 public class Lexer {
-    // Store every C0 code in a list
-    private List<String> CodeLineList;
+    private boolean _isInitialized;
+    private ArrayList<String> _lines_buffer;
+    private Pair<Integer, Integer> _ptr;
 
-    // The number of the C0 line
-    private int lineSize = 0;
-
-    // Max line of the code
-    private static final int MAX_LINE_SIZE = 5000;
-
-    // -1 means end
-    private int lineNumber;
-    private char currentChar;
-
-    // -1 means end
-    private int position;
-
-    private String currentLineContent;
-    // A map to store keywords and the all operators
-    private Map<String,Symbol> keywordsMap;
-    private Map<String,Symbol> operatorsMap;
-    public Lexer() {
-        lineNumber = 0;
-        position = 0;
-        // Initialization of all the keywords
-        keywordsMap = new HashMap<>();
-        keywordsMap.put("const",Symbol.CONST);
-        keywordsMap.put("void",Symbol.VOID);
-        keywordsMap.put("int",Symbol.INT);
-        keywordsMap.put("char",Symbol.CHAR);
-        keywordsMap.put("double",Symbol.DOUBLE);
-        keywordsMap.put("struct",Symbol.STRUCT);
-        keywordsMap.put("if",Symbol.IF);
-        keywordsMap.put("else",Symbol.ELSE);
-        keywordsMap.put("switch",Symbol.SWITCH);
-        keywordsMap.put("case",Symbol.CASE);
-        keywordsMap.put("default",Symbol.DEFAULT);
-        keywordsMap.put("while",Symbol.WHILE);
-        keywordsMap.put("for",Symbol.FOR);
-        keywordsMap.put("do",Symbol.DO);
-        keywordsMap.put("return",Symbol.RETURN);
-        keywordsMap.put("break",Symbol.BREAK);
-        keywordsMap.put("continue",Symbol.CONTINUE);
-        keywordsMap.put("printf",Symbol.PRINT);
-        keywordsMap.put("scan",Symbol.SCAN);
-
-        // Add a main symbol to start the main function
-        keywordsMap.put("main",Symbol.MAIN);
-
-
-        // Operator
-        operatorsMap = new HashMap<>();
-        operatorsMap.put("+",Symbol.PLUS);
-        operatorsMap.put("-",Symbol.MINUS);
-        operatorsMap.put("*",Symbol.MULTIPLY);
-        operatorsMap.put("/",Symbol.DIVIDE);
-        operatorsMap.put("=",Symbol.EQUAL);
-        operatorsMap.put("(",Symbol.LEFT_BRACKET);
-        operatorsMap.put(")",Symbol.RIGHT_BRACKET);
-        operatorsMap.put("{",Symbol.LEFT_BRACE);
-        operatorsMap.put("}",Symbol.RIGHT_BRACE);
-        operatorsMap.put(",",Symbol.COMMA);
-        operatorsMap.put(";",Symbol.SEMICOLON);
-
-
-    }
-    public List<String> getSourceCodeLineList() {
-        return CodeLineList;
+    Lexer() {
     }
 
-    /**
-     * Open a file to analyse
-     * @param pathname the name of the file
-     */
-    public void openFile(String pathname) throws Exception{
-        File file = new File(pathname);
-        BufferedReader bufferedReader;
-        bufferedReader = new BufferedReader(new FileReader(file));
-        String line;
-        CodeLineList = new ArrayList<>();
-        while((line = bufferedReader.readLine())!=null) {
-            CodeLineList.add(line);
-        }
-        lineSize = CodeLineList.size();
-        if (lineSize > MAX_LINE_SIZE) {
-            lineSize = 0;
-            throw new Exception("The code is too long!");
-        }
-        if (lineSize == 0) {
-            lineSize = 0;
-            throw new Exception("The code cannot be empty!");
-        }
-        // Get the first line of the code
-        currentLineContent = CodeLineList.get(0);
+
+    private enum DFAState {
+        INIT_STATE,
+        INTEGER_STATE, IDENTIFIER_STATE, ZERO_STATE,
+        HEX_STATE,
+        PLUS_STATE, MINUS_STATE,
+        MULTIPLY_STATE, DIVIDE_STATE,
+        ASSIGN_EQUAL_STATE,
+        LESS_STATE, LE_STATE, GREATER_STATE,
+        GE_STATE, NOT_EQUAL_STATE, EQUAL_STATE,
+        COMMA_STATE,
+        LEFT_PARENTHESIS_STATE, RIGHT_PARENTHESIS_STATE,
+        LEFT_BRACE_STATE, RIGHT_BRACE_STATE,
+        SEMICOLON_STATE,
     }
 
-    // Move to next char
-    private void moveToNextChar() {
-        // Change the line
-        if (position >= currentLineContent.length()-1) {
-            lineNumber++;
-            position = 0;
+    private char nextChar() {
+        if (isEOF()) {
+            return ' ';
         }
-        // In the same line, move to the next char
-        else {
-            position++;
-        }
-
-        if (lineNumber >= lineSize) {
-            lineNumber = -1;
-            position = -1;
-            return;
-        }
-        // In case that code change the line
-        currentLineContent = CodeLineList.get(lineNumber);
+        char result = _lines_buffer.get(_ptr.getFirst()).charAt(_ptr.getSecond());
+        _ptr = nextPos();
+        return result;
     }
 
-    private char getCurrentChar(){
-        return currentLineContent.charAt(position);
+    private void unreadLast() {
+        _ptr = previousPos();
     }
 
-    private char getNextChar(){
-        int l=lineNumber,p=position;
-        if (p >= currentLineContent.length()-1) {
-            return '\n';
-        }
-        // In the same line, move to the next char
-        else {
-            return currentLineContent.charAt(p+1);
-        }
-    }
 
-    /**
-     * Analyse a token form a line string
-     * @return new token
-     */
-    public Word getToken() throws Exception {
-        Word word = new Word();
-        // Judge weather the code ends
-        if (lineNumber ==-1 && position==-1) {
-            word.setType(Symbol.END);
-            return word;
-        }
-        StringBuilder wordValue = new StringBuilder("");
-        // Remove the empty line
-        while (currentLineContent.length()==0) {
-            lineNumber++;
-            currentLineContent = CodeLineList.get(lineNumber);
-        }
-        char currentChar = getCurrentChar();
-        // Filter the space and the tab, do not solve the '\n'
-        while (currentChar == ' ' || currentChar == '\t' ||currentChar=='\r') {
-            moveToNextChar();
-            currentChar = getCurrentChar();
-        }
-
-        if (Character.isLetter(currentChar))
-        {
-            // identifier
-            do
-            {
-                wordValue.append(currentChar);
-                moveToNextChar();
-                if (lineNumber ==-1 && position==-1) {
-                    // Not empty
-                    if (!("".equals(wordValue.toString()))) {
-                        word.setType(Symbol.IDENTIFIER);
-                        word.setValue(wordValue.toString());
+    public Token nextToken() {
+        StringBuilder ss = new StringBuilder();
+        Pair<Integer, Integer> pos;
+        DFAState current_state = DFAState.INIT_STATE;
+        while (true) {
+            char current_char = nextChar();
+            switch (current_state) {
+                case INIT_STATE: {
+                    if (isEOF())
+                        return new Token();
+                    boolean invalid = false;
+                    if (isSpaceChar(current_char)) {
+                        current_state = DFAState.INIT_STATE;
+                    } else if (!isISOControl(current_char)) {
+                        invalid = true;
+                    } else if (isDigit(current_char)) {
+                        if (current_char == '0')
+                            current_state = DFAState.ZERO_STATE;
+                        else
+                            current_state = DFAState.INTEGER_STATE;
+                    } else if (isLetter(current_char)) {
+                        current_state = DFAState.IDENTIFIER_STATE;
                     } else {
-                        word.setType(Symbol.END);
+                        switch (current_char) {
+                            case '+':
+                                current_state = DFAState.PLUS_STATE;
+                                break;
+                            case '-':
+                                current_state = DFAState.MINUS_STATE;
+                                break;
+                            case '*':
+                                current_state = DFAState.MULTIPLY_STATE;
+                                break;
+                            case '/':
+                                current_state = DFAState.DIVIDE_STATE;
+                                break;
+                            case '(':
+                                current_state = DFAState.LEFT_PARENTHESIS_STATE;
+                                break;
+                            case ')':
+                                current_state = DFAState.RIGHT_PARENTHESIS_STATE;
+                                break;
+                            case '{':
+                                current_state = DFAState.LEFT_BRACE_STATE;
+                                break;
+                            case '}':
+                                current_state = DFAState.RIGHT_BRACE_STATE;
+                                break;
+                            case ',':
+                                current_state = DFAState.COMMA_STATE;
+                                break;
+                            case ';':
+                                current_state = DFAState.SEMICOLON_STATE;
+                                break;
+                            case '>':
+                                current_state = DFAState.GREATER_STATE;
+                                break;
+                            case '<':
+                                current_state = DFAState.LESS_STATE;
+                                break;
+                            case '!':
+                                current_state = DFAState.NOT_EQUAL_STATE;
+                                break;
+                            case '=':
+                                current_state = DFAState.ASSIGN_EQUAL_STATE;
+                                break;
+                            default:
+                                invalid = true;
+                                break;
+                        }
                     }
-                    return word;
+                    if (current_state != DFAState.INIT_STATE)
+                        pos = previousPos();
+                    if (invalid) {
+                        unreadLast();
+                        ErrorMsg.Error(pos + ":Invalid");
+                    }
+                    if (current_state != DFAState.INIT_STATE && (Character.isLetter(current_char) || Character.isDigit(current_char)))
+                        ss.append(current_char);
+                    break;
                 }
-                currentChar = getCurrentChar();
-            } while (Character.isLetter(currentChar) || Character.isDigit(currentChar));
-            
-            //Judge weather is keyword
-            word.setType(keywordsMap.getOrDefault(wordValue.toString(),Symbol.IDENTIFIER));
-        } 
-        else {
-            // digit?
-            if (Character.isDigit(currentChar))
-            {
-                if(currentChar=='0' && (getNextChar()=='x'||getNextChar()=='X')) {
-                    wordValue.append(currentChar);
-                    // Add char 'x' or 'X' into the number
-                    moveToNextChar();
-                    currentChar=getCurrentChar();
-                    wordValue.append(currentChar);
+                case INTEGER_STATE: {
+                    boolean invalid = false;
+                    if (!isISOControl(current_char) && !isSpaceChar(current_char)) invalid = true;
+                    else if (isDigit(current_char)) ss.append(current_char);
+                    else {
+                        unreadLast();
+                        try {
+                            String s = ss.toString();
+                            int res = Integer.parseInt(s);
+                            return new Token(TokenType.INTEGER, res, pos, currentPos());
+                        } catch (Exception e) {
+                            ErrorMsg.Error(pos + ":Overflow");
+                        }
+                    }
+                    if (invalid) {
+                        unreadLast();
+                        ErrorMsg.Error(pos + ":Invalid");
+                    }
+                    break;
+                }
+                case IDENTIFIER_STATE: {
+                    boolean invalid = false;
+                    if (!isISOControl(current_char) && !isSpaceChar(current_char))
+                        invalid = true;
+                    else if (isDigit(current_char) || isLetter(current_char))
+                        ss.append(current_char);
+                    else {
+                        unreadLast();
+                        try {
+                            String s = ss.toString();
+                            switch (s) {
+                                case "const":
+                                    return new Token(TokenType.CONST, s, pos, currentPos());
+                                case "int":
+                                    return new Token(TokenType.INT, s, pos, currentPos());
+                                case "void":
+                                    return new Token(TokenType.VOID, s, pos, currentPos());
+                                case "char":
+                                    return new Token(TokenType.CHAR, s, pos, currentPos());
+                                case "double":
+                                    return new Token(TokenType.DOUBLE, s, pos, currentPos());
+                                case "struct":
+                                    return new Token(TokenType.STRUCT, s, pos, currentPos());
+                                case "if":
+                                    return new Token(TokenType.IF, s, pos, currentPos());
+                                case "else":
+                                    return new Token(TokenType.ELSE, s, pos, currentPos());
+                                case "switch":
+                                    return new Token(TokenType.SWITCH, s, pos, currentPos());
+                                case "case":
+                                    return new Token(TokenType.CASE, s, pos, currentPos());
+                                case "default":
+                                    return new Token(TokenType.DEFAULT, s, pos, currentPos());
+                                case "while":
+                                    return new Token(TokenType.WHILE, s, pos, currentPos());
+                                case "for":
+                                    return new Token(TokenType.FOR, s, pos, currentPos());
+                                case "do":
+                                    return new Token(TokenType.DO, s, pos, currentPos());
+                                case "return":
+                                    return new Token(TokenType.RETURN, s, pos, currentPos());
+                                case "break":
+                                    return new Token(TokenType.BREAK, s, pos, currentPos());
+                                case "continue":
+                                    return new Token(TokenType.CONTINUE, s, pos, currentPos());
+                                case "print":
+                                    return new Token(TokenType.PRINT, s, pos, currentPos());
+                                case "scan":
+                                    return new Token(TokenType.SCAN, s, pos, currentPos());
 
-                    // Add the number behind the char 'X' or 'x'
-                    moveToNextChar();
-                    currentChar=getCurrentChar();
-                    while (Character.isDigit(currentChar)) {
-                        wordValue.append(currentChar);
-                        moveToNextChar();
-                        if(lineNumber==-1 && position == -1) {
-                            word.setType(Symbol.END);
-                            return word;
+                                default: {
+                                    return new Token(TokenType.IDENTIFIER, s, pos, currentPos());
+                                }
+                            }
+                        } catch (Exception e) {
+                            ErrorMsg.Error(pos + ":Invalid");
                         }
-                        currentChar=getCurrentChar();
+                    }
+                    break;
+                }
+
+                case ZERO_STATE: {
+                    if (current_char == 'X' || current_char == 'x') {
+                        current_state = DFAState.HEX_STATE;
+                        ss.append(current_char);
+                        break;
+                    } else {
+                        unreadLast();
+                        return new Token(TokenType.INTEGER, 0, pos, currentPos());
+                    }
+
+                }
+
+                case HEX_STATE: {
+                    boolean invalid = false;
+                    if (!isISOControl(current_char) && !isSpaceChar(current_char))
+                        invalid = true;
+                    else if (isDigit(current_char))
+                        ss.append(current_char);
+                    else if (current_char == 'a' || current_char == 'A' ||
+                            current_char == 'b' || current_char == 'B' ||
+                            current_char == 'c' || current_char == 'C' ||
+                            current_char == 'd' || current_char == 'D' ||
+                            current_char == 'e' || current_char == 'E' ||
+                            current_char == 'f' || current_char == 'F')
+                        ss.append(current_char);
+                    else {
+                        unreadLast();
+                        String s;
+                        s = ss.toString();
+                        try {
+                            int res = Integer.decode(s);
+                            return new Token(TokenType.INTEGER, res, pos, currentPos());
+                        } catch (Exception e) {
+                            if (s.length() == 2)
+                                ErrorMsg.Error(pos + ":Invalid hex number");
+                            else
+                                ErrorMsg.Error(pos + ":Overflow");
+                        }
+                    }
+                    if (invalid) {
+                        unreadLast();
+                        ErrorMsg.Error(":Invalid");
+                    }
+                    break;
+                }
+
+                case PLUS_STATE: {
+                    unreadLast();
+                    return new Token(TokenType.PLUS, '+', pos, currentPos());
+                }
+                case MINUS_STATE: {
+                    unreadLast();
+                    return new Token(TokenType.MINUS, '-', pos, currentPos());
+                }
+                case MULTIPLY_STATE: {
+                    unreadLast();
+                    return new Token(TokenType.MULTIPLY, '*', pos, currentPos());
+                }
+                case DIVIDE_STATE: {
+                    if (current_char == '/') {
+                        while (current_char != '\n') {
+                            if (isEOF())
+                                ErrorMsg.Error(pos + ":Incomplete common");
+                            current_char = nextChar();
+                        }
+                        current_state = DFAState.INIT_STATE;
+                        break;
+                    } else if (current_char == '*') {
+                        current_char = nextChar();
+                        char next_char = nextChar();
+                        while (current_char != '*' || next_char != '/') {
+                            if (isEOF())
+                                ErrorMsg.Error(pos + ":Incomplete common");
+                            current_char = next_char;
+                            next_char = nextChar();
+                        }
+                        current_state = DFAState.INIT_STATE;
+                        break;
+                    } else {
+                        unreadLast();
+                        return new Token(TokenType.DIVIDE, '/', pos, currentPos());
                     }
                 }
-                else {
-                    do {
-                        wordValue.append(currentChar);
-                        moveToNextChar();
-                        // Maybe the code is end
-                        if (lineNumber == -1 && position == -1) {
-                            word.setType(Symbol.END);
-                            return word;
-                        }
-                        currentChar = getCurrentChar();
-                    } while (Character.isDigit(currentChar));
+                case ASSIGN_EQUAL_STATE: {
+                    if (current_char == '=') {
+                        current_state = DFAState.EQUAL_STATE;
+                        break;
+                    } else {
+                        unreadLast();
+                        return new Token(TokenType.ASSIGN_EQUAL, '=', pos, currentPos());
+                    }
                 }
-                word.setType(Symbol.NUMBER);
-            }
-            else {
-                // Check the char is operator
-                wordValue.append(currentChar);
-                word.setType(operatorsMap.getOrDefault(wordValue.toString(),Symbol.NUL));
-                moveToNextChar();
+                case LESS_STATE: {
+                    if (current_char == '=') {
+                        current_state = DFAState.LE_STATE;
+                        break;
+                    } else {
+                        unreadLast();
+                        return new Token(TokenType.LESS, '<', pos, currentPos());
+                    }
+                }
+                case LE_STATE: {
+                    unreadLast();
+                    return new Token(TokenType.LE, "<=", pos, currentPos());
+                }
+                case GREATER_STATE: {
+                    if (current_char == '=') {
+                        current_state = DFAState.GE_STATE;
+                        break;
+                    } else {
+                        unreadLast();
+                        return new Token(TokenType.GREATER, '>', pos, currentPos());
+                    }
+                }
+                case GE_STATE: {
+                    unreadLast();
+                    return new Token(TokenType.GE, ">=", pos, currentPos());
+                }
+                case NOT_EQUAL_STATE: {
+                    if (current_char == '=')
+                        return new Token(TokenType.NOT_EQUAL,  "!=", pos, currentPos());
+                    else
+                        ErrorMsg.Error(pos+"Invalid sign");
+                }
+                case EQUAL_STATE: {
+                    unreadLast();
+                    return new Token(TokenType.EQUAL, "==", pos, currentPos());
+                }
+                case COMMA_STATE: {
+                    unreadLast();
+                    return new Token(TokenType.COMMA, ',', pos, currentPos());
+                }
+                case LEFT_PARENTHESIS_STATE: {
+                    unreadLast();
+                    return new Token(TokenType.LEFT_PARENT, '(', pos, currentPos());
+                }
+                case RIGHT_PARENTHESIS_STATE: {
+                    unreadLast();
+                    return new Token(TokenType.RIGHT_PARENT, ')', pos, currentPos());
+                }
+                case LEFT_BRACE_STATE: {
+                    unreadLast();
+                    return new Token(TokenType.LEFT_BRACE, '{', pos, currentPos());
+                }
+                case RIGHT_BRACE_STATE: {
+                    unreadLast();
+                    return new Token(TokenType.RIGHT_BRACE, '}', pos, currentPos());
+                }
+                case SEMICOLON_STATE: {
+                    unreadLast();
+                    return Token(TokenType.SEMICOLON, ';', pos, currentPos());
+                }
+                default:
+                    ErrorMsg.Error("An exception state");
+                    break;
+
             }
         }
-        word.setValue(wordValue.toString());
-        return word;
     }
-    /*
-    public String getPosition() {
-        return "The line:" + (lineNumber+1);
-    }
-    */
 
-    public int getLineNumber() {
-        return lineNumber;
+
+    // TODO:FINISH
+    public ArrayList<Token> allTokens() {
+        if (!_isInitialized) readAll();
+        if (_rdr.bad())
+            ErrorMsg.Error("Initialize error");
+        ArrayList<Token> result=new ArrayList<>();
+        while (true) {
+            Token p = nextToken();
+            checkToken(p);
+            if (p.isEnd()) return result;
+            result.add(p);
+        }
+    }
+
+    void checkToken(Token t) {
+        switch (t.GetType()) {
+            case IDENTIFIER: {
+                String val = t.GetValueString();
+                if (isDigit(val.charAt(0)))
+                    ErrorMsg.Error("Invalid identifier");
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
+    // Todo:debug stream
+    private void readAll() {
+        Scanner s=new Scanner(System.in);
+        if (_isInitialized)
+            return;
+        for (String tp; std::getline(_rdr, tp);)
+        _lines_buffer.add(tp + "\n");
+        _isInitialized = true;
+        _ptr = new Pair<>(0, 0);
+    }
+
+    private Pair<Integer, Integer> nextPos() {
+        if (_ptr.getFirst() >= _lines_buffer.size())
+            ErrorMsg.Error("EOF");
+        if (_ptr.getSecond() == _lines_buffer.get(_ptr.getFirst()).length() - 1)
+            return new Pair<>(_ptr.getFirst() + 1, 0);
+        else
+            return new Pair<>(_ptr.getFirst(), _ptr.getSecond() + 1);
+    }
+
+    private Pair<Integer, Integer> currentPos() {
+        return _ptr;
+    }
+
+    private Pair<Integer, Integer> previousPos() {
+        if (_ptr.getFirst() == 0 && _ptr.getSecond() == 0)
+            ErrorMsg.Error("previous position from beginning");
+        if (_ptr.getSecond() == 0)
+            return new Pair<>(_ptr.getFirst() - 1, _lines_buffer.get(_ptr.getFirst() - 1).length() - 1);
+        else
+            return new Pair<>(_ptr.getFirst(), _ptr.getSecond() - 1);
+    }
+
+    private boolean isEOF() {
+        return _ptr.getFirst() >= _lines_buffer.size();
     }
 }
