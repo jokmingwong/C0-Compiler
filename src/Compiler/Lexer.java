@@ -1,13 +1,14 @@
-package Compiler.lexer;
+package Compiler;
 
-import Compiler.Instruction.Interpreter;
-import Compiler.common.ErrorMsg;
-import Compiler.common.Pair;
-import Compiler.common.Token;
-import Compiler.common.TokenType;
+import Common.ErrorMsg;
+import Common.Pair;
+import Common.Token;
+import Common.TokenType;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Scanner;
 
 import static java.lang.Character.*;
 
@@ -20,7 +21,12 @@ public class Lexer {
     private ArrayList<String> _lines_buffer;
     private Pair<Integer, Integer> _ptr;
 
-    Lexer() {
+    public Lexer() {
+        _lines_buffer=new ArrayList<>();
+    }
+    
+    private static boolean isSpace(char ch){
+        return isSpaceChar(ch)||ch=='\n'||ch=='\t'||ch=='\r';
     }
 
 
@@ -55,7 +61,8 @@ public class Lexer {
 
     public Token nextToken() {
         StringBuilder ss = new StringBuilder();
-        Pair<Integer, Integer> pos;
+        // Todo:is (0,0) right?
+        Pair<Integer, Integer> pos=new Pair<>(0,0);
         DFAState current_state = DFAState.INIT_STATE;
         while (true) {
             char current_char = nextChar();
@@ -64,9 +71,9 @@ public class Lexer {
                     if (isEOF())
                         return new Token();
                     boolean invalid = false;
-                    if (isSpaceChar(current_char)) {
+                    if (isSpace(current_char)) {
                         current_state = DFAState.INIT_STATE;
-                    } else if (!isISOControl(current_char)) {
+                    } else if (isISOControl(current_char)) {
                         invalid = true;
                     } else if (isDigit(current_char)) {
                         if (current_char == '0')
@@ -128,7 +135,7 @@ public class Lexer {
                         pos = previousPos();
                     if (invalid) {
                         unreadLast();
-                        ErrorMsg.Error(pos + ":Invalid");
+                        ErrorMsg.Error( "Invalid identifier");
                     }
                     if (current_state != DFAState.INIT_STATE && (Character.isLetter(current_char) || Character.isDigit(current_char)))
                         ss.append(current_char);
@@ -136,7 +143,7 @@ public class Lexer {
                 }
                 case INTEGER_STATE: {
                     boolean invalid = false;
-                    if (!isISOControl(current_char) && !isSpaceChar(current_char)) invalid = true;
+                    if (isISOControl(current_char) && !isSpace(current_char)) invalid = true;
                     else if (isDigit(current_char)) ss.append(current_char);
                     else {
                         unreadLast();
@@ -156,7 +163,7 @@ public class Lexer {
                 }
                 case IDENTIFIER_STATE: {
                     boolean invalid = false;
-                    if (!isISOControl(current_char) && !isSpaceChar(current_char))
+                    if (isISOControl(current_char) && !isSpace(current_char))
                         invalid = true;
                     else if (isDigit(current_char) || isLetter(current_char))
                         ss.append(current_char);
@@ -229,7 +236,7 @@ public class Lexer {
 
                 case HEX_STATE: {
                     boolean invalid = false;
-                    if (!isISOControl(current_char) && !isSpaceChar(current_char))
+                    if (isISOControl(current_char) && !isSpace(current_char))
                         invalid = true;
                     else if (isDigit(current_char))
                         ss.append(current_char);
@@ -277,7 +284,7 @@ public class Lexer {
                     if (current_char == '/') {
                         while (current_char != '\n') {
                             if (isEOF())
-                                ErrorMsg.Error(pos + ":Incomplete common");
+                                ErrorMsg.Error(pos + ":Incomplete Common");
                             current_char = nextChar();
                         }
                         current_state = DFAState.INIT_STATE;
@@ -287,7 +294,7 @@ public class Lexer {
                         char next_char = nextChar();
                         while (current_char != '*' || next_char != '/') {
                             if (isEOF())
-                                ErrorMsg.Error(pos + ":Incomplete common");
+                                ErrorMsg.Error(pos + ":Incomplete Common");
                             current_char = next_char;
                             next_char = nextChar();
                         }
@@ -365,7 +372,7 @@ public class Lexer {
                 }
                 case SEMICOLON_STATE: {
                     unreadLast();
-                    return Token(TokenType.SEMICOLON, ';', pos, currentPos());
+                    return new Token(TokenType.SEMICOLON, ';', pos, currentPos());
                 }
                 default:
                     ErrorMsg.Error("An exception state");
@@ -377,39 +384,37 @@ public class Lexer {
 
 
     // TODO:FINISH
-    public ArrayList<Token> allTokens() {
-        if (!_isInitialized) readAll();
-        if (_rdr.bad())
-            ErrorMsg.Error("Initialize error");
+    public ArrayList<Token> allTokens(FileReader fr) {
+        if (!_isInitialized) readAll(fr);
+
         ArrayList<Token> result=new ArrayList<>();
         while (true) {
             Token p = nextToken();
-            checkToken(p);
+            //checkToken(p);
+            if(p.GetType()==TokenType.IDENTIFIER){
+                String val=p.GetValueString();
+                if(isDigit(val.charAt(0)))
+                    ErrorMsg.Error("Invalid identifier");
+            }
             if (p.isEnd()) return result;
             result.add(p);
         }
     }
 
-    void checkToken(Token t) {
-        switch (t.GetType()) {
-            case IDENTIFIER: {
-                String val = t.GetValueString();
-                if (isDigit(val.charAt(0)))
-                    ErrorMsg.Error("Invalid identifier");
-                break;
-            }
-            default:
-                break;
-        }
-    }
-
     // Todo:debug stream
-    private void readAll() {
-        Scanner s=new Scanner(System.in);
+    private void readAll(FileReader fr) {
         if (_isInitialized)
             return;
-        for (String tp; std::getline(_rdr, tp);)
-        _lines_buffer.add(tp + "\n");
+        try {
+            BufferedReader bf = new BufferedReader(fr);
+            String str;
+            while ((str = bf.readLine()) != null) {
+                _lines_buffer.add(str+"\n");
+            }
+        }catch (IOException e){
+            ErrorMsg.Error("Read error");
+        }
+
         _isInitialized = true;
         _ptr = new Pair<>(0, 0);
     }

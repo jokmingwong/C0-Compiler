@@ -1,4 +1,4 @@
-package Compiler.common;
+package Common;
 
 public class Token {
 
@@ -18,7 +18,7 @@ public class Token {
 
     public Token(TokenType type, Object value, Pair<Integer,Integer>start, Pair<Integer, Integer> end)
     {
-        new Token(type,value,start.getFirst(),start.getSecond(),end.getFirst(),end.getSecond());
+        this(type,value,start.getFirst(),start.getSecond(),end.getFirst(),end.getSecond());
     }
 
     public Boolean isEnd() {
@@ -45,4 +45,8 @@ public class Token {
         return _type;
     }
 
+    @Override
+    public String toString() {
+        return GetValueString();
+    }
 }

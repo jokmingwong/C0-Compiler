@@ -1,4 +1,4 @@
-package Compiler.common;
+package Common;
 
 public class Pair<A, B> {
     private A first;

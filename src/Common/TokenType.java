@@ -1,4 +1,4 @@
-package Compiler.common;
+package Common;
 
 public enum TokenType {
     NUL, // Cannot be analysed
