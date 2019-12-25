@@ -1,6 +1,8 @@
 package AbstractStatementTree;
 
+import Common.ErrorMsg;
 import Common.Token;
+import Symbol.Command;
 
 public class VariableDeclarationAST extends AbstractSyntaxTree {
     private boolean isConst;
@@ -21,11 +23,23 @@ public class VariableDeclarationAST extends AbstractSyntaxTree {
         this.identifier = identifier;
     }
 
-    void generate(){
-
+    @Override
+    public void generate(){
+        int index=symbol.getVariableIndex(identifier.GetValueString(),currentFunc);
+        if(index!=-1)
+            ErrorMsg.Error("Duplicate declare");
+        int funcIndex=symbol.getFunctionIndex(identifier.GetValueString());
+        if(funcIndex !=-1 && currentFunc.equals(""))
+            ErrorMsg.Error("Duplicate declare");
+        symbol.addVariable(identifier.GetValueString(),isConst,isInit,currentFunc);
+        if(passParameters.equals("passing")){
+            if(!isInit && isConst)
+                ErrorMsg.Error("Constant need value");
+            else if(!isInit)
+                symbol.addCommand(currentFunc,new Command("snew",1,-1));
+            else
+                value.generate();
+        }
     }
 
-    void draw(){
-
-    }
 }

@@ -4,18 +4,22 @@ import Symbol.Symbol;
 
 import java.util.ArrayList;
 
-// TODO: recode
-public class ProgramAST extends AbstractSyntaxTree {
+
+public class ProgramAST implements AbstractSyntaxTree {
     private ArrayList<VariableDeclarationAST>vars;
     private ArrayList<FunctionDeclarationAST>funcs;
 
     public ProgramAST(){}
 
-    void generate() {}
-    void draw(){}
+    public void generate() {}
+
 
     Symbol _generate(){
-
+        for(VariableDeclarationAST v:vars)
+            v.generate();
+        for(FunctionDeclarationAST f:funcs)
+            f.generate();
+        return symbol;
     }
 
     private void _add(VariableDeclarationAST p){

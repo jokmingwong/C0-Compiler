@@ -2,7 +2,18 @@ package AbstractStatementTree;
 
 import Common.Token;
 
-public class AssignExpressionAST extends AbstractSyntaxTree {
+public class AssignExpressionAST implements AbstractSyntaxTree {
     private Token identifier;
-    ExpressionAST value;
+    private ExpressionAST value;
+
+    public AssignExpressionAST(Token identifier, ExpressionAST value) {
+        this.identifier = identifier;
+        this.value = value;
+    }
+
+    @Override
+    public void generate() {
+
+    }
+
 }

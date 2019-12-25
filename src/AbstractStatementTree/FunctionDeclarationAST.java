@@ -1,23 +1,25 @@
 package AbstractStatementTree;
 
+import Common.ErrorMsg;
+import Common.Token;
 import Common.TokenType;
 
 import java.util.ArrayList;
 
 public class FunctionDeclarationAST extends AbstractSyntaxTree{
-    private TokenType identifier;
+    private Token identifier;
     private ArrayList<VariableDeclarationAST>parameters;
-    private ArrayList<CompoundStatementAST> compoundStatements;
+    private CompoundStatementAST compoundStatements;
     private TokenType returnType;
     public FunctionDeclarationAST(){}
     private void _add(VariableDeclarationAST p){
         parameters.add(p);
     }
 
-    public void setIdentifier(TokenType identifier) {
+    public void setIdentifier(Token identifier) {
         this.identifier = identifier;
     }
-    public void setCompoundStatements(ArrayList<CompoundStatementAST> compoundStatements) {
+    public void setCompoundStatements(CompoundStatementAST compoundStatements) {
         this.compoundStatements = compoundStatements;
     }
 
@@ -26,10 +28,20 @@ public class FunctionDeclarationAST extends AbstractSyntaxTree{
     }
 
     public void generate(){
-
+        String name=identifier.GetValueString();
+        int funcIndex=symbol.getFunctionIndex(name);
+        int varIndex=symbol.getVariableIndex(name,"");
+        if(funcIndex != -1 || varIndex != -1)
+            ErrorMsg.Error("Error duplicate");
+        symbol.addFunction(name,parameters.size(),returnType);
+        currentFunc=name;
+        level=1;
+        symbol.localIndex=0;
+        passParameters = "passing";
+        for (VariableDeclarationAST v : parameters)
+            v.generate();
+        passParameters = "";
+        compoundStatements.generate();
     }
 
-    public void draw(){
-
-    }
 }

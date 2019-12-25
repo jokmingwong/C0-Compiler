@@ -144,6 +144,13 @@ public class Symbol {
         return -1;
     }
 
+    public boolean isInitialized(String varName, String funcName) {
+        for (Variable v: variableTable)
+            if (v.name.equals(varName) && funcName.equals(v.scope))
+                return v.isInit;
+        return false;
+    }
+
     public boolean isConst(String varName, String funcName) {
         for(Variable v:variableTable)
             if(v.name.equals(varName) && funcName.equals(v.scope))
