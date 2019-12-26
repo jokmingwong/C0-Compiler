@@ -41,6 +41,14 @@ public class Token {
         return _value.toString();
     }
 
+    public Pair<Integer, Integer> GetEndPos() {
+        return _end_pos;
+    }
+
+    public Pair<Integer, Integer> GetStartPos() {
+        return _start_pos;
+    }
+
     public TokenType GetType(){
         return _type;
     }

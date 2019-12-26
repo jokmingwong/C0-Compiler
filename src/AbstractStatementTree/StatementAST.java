@@ -9,7 +9,7 @@ public class StatementAST extends AbstractSyntaxTree{
         singleStatement =null;
     }
 
-    public void _add(StatementAST p){
+    public void add(StatementAST p){
         statements.add(p);
     }
     public void setSingleStatement(AbstractSyntaxTree p){

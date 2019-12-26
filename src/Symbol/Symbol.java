@@ -1,15 +1,17 @@
 package Symbol;
 
+import Common.ErrorMsg;
 import Common.Pair;
 import Common.TokenType;
 
+import java.io.FileWriter;
 import java.util.ArrayList;
 
 public class Symbol {
     // Define 3 tables to store
-    private ArrayList<Variable> variableTable;
-    private ArrayList<Function> functionTable;
-    private ArrayList<Command> startCode;
+    private ArrayList<Variable> variableTable=new ArrayList<>();
+    private ArrayList<Function> functionTable=new ArrayList<>();
+    private ArrayList<Command> startCode=new ArrayList<>();
 
     private static void print(Object o) {
         System.out.print(o);
@@ -74,40 +76,45 @@ public class Symbol {
         return null;
     }
 
-    public StringBuilder outputAssemble(StringBuilder output) {
-        output.append(".constants:\n");
-        for (Function f : functionTable) {
-            output.append((f.index + ' ' + 'S' +' ' + '\"' +f.name +'\"' +'\n'));
-        }
-
-        output .append(".start:\n");
-        int index = 0;
-        for (Command c : startCode) {
-            index++;
-            output.append(index);
-            output.append("\t");
-            output.append(c.command);
-            if (c.arg1 != -1) output.append(" "+c.arg1);
-            if (c.arg2 != -1) output.append(", "+c.arg2);
-            output.append("\n");
-        }
-
-        output.append(".functions:\n");
-        for (Function f : functionTable) {
-            output.append(f.index + ' ' +f.index + ' ');
-            output.append(f.parametersNum + ' ' +1 +"\n");
-        }
-        for (Function f: functionTable) {
-            output.append (".F" +f.index+":\n");
-            for (Command c : f.commandArrayList) {
-                output.append(c.index +"\t");
-                output.append(c.command);
-                if (c.arg1 != -1) output.append(" " + c.arg1);
-                if (c.arg2 != -1) output.append("," + c.arg2);
-                output.append("\n");
+    public FileWriter outputAssemble(FileWriter output) {
+        try {
+            output.write(".constants:\n");
+            for (Function f : functionTable) {
+                output.write(f.index + " S " + '\"' + f.name + '\"' + '\n');
             }
+
+            output.write(".start:\n");
+            int index = 0;
+            for (Command c : startCode) {
+                index++;
+                output.write(index);
+                output.write("\t");
+                output.write(c.command);
+                if (c.arg1 != -1) output.write(" " + c.arg1);
+                if (c.arg2 != -1) output.write(", " + c.arg2);
+                output.write("\n");
+            }
+
+            output.write(".functions:\n");
+            for (Function f : functionTable) {
+                output.write(f.index + ' ' + f.index + ' ');
+                output.write(f.parametersNum + ' ' + 1 + "\n");
+            }
+            for (Function f : functionTable) {
+                output.write(".F" + f.index + ":\n");
+                for (Command c : f.commandArrayList) {
+                    output.write(c.index + "\t");
+                    output.write(c.command);
+                    if (c.arg1 != -1) output.write(" " + c.arg1);
+                    if (c.arg2 != -1) output.write("," + c.arg2);
+                    output.write("\n");
+                }
+            }
+            return output;
+        }catch (Exception e){
+            ErrorMsg.Error("Output assembly error");
         }
-        return output;
+        return null;
     }
 
     public void getVariableTable() {
@@ -126,9 +133,11 @@ public class Symbol {
     }
 
     // Todo:How to solve binary file?
+    /*
     public StringBuilder outputBinary(StringBuilder output) {
 
     }
+    */
 
     public int getVariableIndex(String varName, String funcName) {
         for (Variable v : variableTable)

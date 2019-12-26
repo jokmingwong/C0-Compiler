@@ -7,13 +7,16 @@ import java.util.ArrayList;
 public class CompoundStatementAST extends AbstractSyntaxTree{
     private ArrayList<VariableDeclarationAST>vars;
     private ArrayList<StatementAST> stmt;
-    CompoundStatementAST(){}
+    public CompoundStatementAST(){
+        stmt=new ArrayList<>();
+        vars=new ArrayList<>();
+    }
 
-    public void _add(VariableDeclarationAST p){
+    public void add(VariableDeclarationAST p){
         vars.add(p);
     }
 
-    public void _add(StatementAST p){
+    public void add(StatementAST p){
         stmt.add(p);
     }
 

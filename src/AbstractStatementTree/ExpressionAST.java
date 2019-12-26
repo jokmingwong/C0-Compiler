@@ -9,15 +9,17 @@ public class ExpressionAST extends AbstractSyntaxTree {
     private ArrayList<MultiplicativeExpressionAST> multiExpr;
     private ArrayList<TokenType> operation;
 
-    private void _add(MultiplicativeExpressionAST p) {
+    public void add(MultiplicativeExpressionAST p) {
         multiExpr.add(p);
     }
 
-    private void _add(TokenType t) {
+    public void add(TokenType t) {
         operation.add(t);
     }
 
     public ExpressionAST() {
+        multiExpr=new ArrayList<>();
+        operation=new ArrayList<>();
     }
 
     @Override

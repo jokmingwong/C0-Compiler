@@ -10,12 +10,13 @@ public class FunctionCallAST extends AbstractSyntaxTree {
     private Token identifier;
     private ArrayList<ExpressionAST> exprList;
 
-    FunctionCallAST(Token t){
+    public FunctionCallAST(Token t){
+        exprList=new ArrayList<>();
         identifier=t;
         exprList.clear();
     }
 
-    public void _add(ExpressionAST p){
+    public void add(ExpressionAST p){
         exprList.add(p);
     }
 

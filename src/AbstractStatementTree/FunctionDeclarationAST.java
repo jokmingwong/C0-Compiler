@@ -11,8 +11,10 @@ public class FunctionDeclarationAST extends AbstractSyntaxTree{
     private ArrayList<VariableDeclarationAST>parameters;
     private CompoundStatementAST compoundStatements;
     private TokenType returnType;
-    public FunctionDeclarationAST(){}
-    private void _add(VariableDeclarationAST p){
+    public FunctionDeclarationAST(){
+        parameters=new ArrayList<>();
+    }
+    public void add(VariableDeclarationAST p){
         parameters.add(p);
     }
 

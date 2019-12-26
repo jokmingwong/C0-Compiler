@@ -6,6 +6,7 @@ import Common.Token;
 import Common.TokenType;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -20,8 +21,12 @@ public class Lexer {
     private boolean _isInitialized;
     private ArrayList<String> _lines_buffer;
     private Pair<Integer, Integer> _ptr;
+    private FileReader reader;
 
-    public Lexer() {
+    public Lexer(FileReader r) {
+        this.reader=r;
+        _isInitialized=false;
+        _ptr=new Pair<>(0,0);
         _lines_buffer=new ArrayList<>();
     }
     
@@ -384,8 +389,8 @@ public class Lexer {
 
 
     // TODO:FINISH
-    public ArrayList<Token> allTokens(FileReader fr) {
-        if (!_isInitialized) readAll(fr);
+    public ArrayList<Token> allTokens() {
+        if (!_isInitialized) readAll(reader);
 
         ArrayList<Token> result=new ArrayList<>();
         while (true) {

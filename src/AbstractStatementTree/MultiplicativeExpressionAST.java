@@ -6,15 +6,19 @@ import Symbol.Command;
 import java.util.ArrayList;
 
 public class MultiplicativeExpressionAST extends AbstractSyntaxTree{
-    public MultiplicativeExpressionAST(){}
     private ArrayList<UnaryExpressionAST>unaryExpr;
     private ArrayList<TokenType>op;
 
-    private void _add(UnaryExpressionAST p){
+    public MultiplicativeExpressionAST(){
+        unaryExpr=new ArrayList<>();
+        op=new ArrayList<>();
+    }
+
+    public void add(UnaryExpressionAST p){
         unaryExpr.add(p);
     }
 
-    private void _add(TokenType type){
+    public void add(TokenType type){
         op.add(type);
     }
 
