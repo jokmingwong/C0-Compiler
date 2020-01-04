@@ -1,7 +1,11 @@
+int m;
+
 int fun1()
  {
+     scan(m);
      return (1);
  }
+
  void fun2()
  {
      int c;

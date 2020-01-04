@@ -1,6 +1,9 @@
-int main()
-{
-    int m;
-    scan(m);
-    return 0;
+int g0 = 42;
+
+int fun(int num) {
+    return -num;
+}
+
+int main() {
+    return fun(-123456);
 }

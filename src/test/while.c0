@@ -1,16 +1,16 @@
-int n,number,i;
+int n=1,number=1,i=1;
 int fun()
 {
     return (number+i);
 }
 void main()
 {
-    scanf(n);
-    scanf(number);
+    scan(n);
+    scan(number);
     i=0;
     while(n)
     {
-	    printf(fun());
+	    print(fun());
         i=i+1;
         n=n-1;
 	}

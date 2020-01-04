@@ -1,4 +1,4 @@
-package AbstractStatementTree;
+package AbstractSyntaxTree;
 
 import Common.ErrorMsg;
 import Common.Token;
@@ -32,7 +32,7 @@ public class VariableDeclarationAST extends AbstractSyntaxTree {
         if(funcIndex !=-1 && currentFunc.equals(""))
             ErrorMsg.Error("Duplicate declare");
         symbol.addVariable(identifier.GetValueString(),isConst,isInit,currentFunc);
-        if(passParameters.equals("passing")){
+        if(!passParameters.equals("passing")){
             if(!isInit && isConst)
                 ErrorMsg.Error("Constant need value");
             else if(!isInit)

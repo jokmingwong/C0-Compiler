@@ -1,4 +1,4 @@
-package AbstractStatementTree;
+package AbstractSyntaxTree;
 
 import Common.ErrorMsg;
 import Common.Token;
@@ -20,7 +20,7 @@ public class FunctionCallAST extends AbstractSyntaxTree {
         exprList.add(p);
     }
 
-    public Token getIdentifier(){
+    Token getIdentifier(){
         return identifier;
     }
 

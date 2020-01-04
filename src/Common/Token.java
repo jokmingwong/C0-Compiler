@@ -2,18 +2,18 @@ package Common;
 
 public class Token {
 
-    private TokenType _type;
-    private Object _value;
-    private Pair<Integer, Integer> _start_pos;
-    private Pair<Integer, Integer> _end_pos;
+    private TokenType type;
+    private Object value;
+    private Pair<Integer, Integer> startPos;
+    private Pair<Integer, Integer> endPos;
     private Boolean _isEnd = false;
 
-    public Token(TokenType type, Object value, int start_line, int start_column, int end_line,
+    private Token(TokenType type, Object value, int start_line, int start_column, int end_line,
           int end_column){
-        _type=type;
-        _value=value;
-        _start_pos=new Pair<>(start_line,start_column);
-        _end_pos=new Pair<>(end_line,end_column);
+        this.type =type;
+        this.value =value;
+        startPos =new Pair<>(start_line,start_column);
+        endPos =new Pair<>(end_line,end_column);
     }
 
     public Token(TokenType type, Object value, Pair<Integer,Integer>start, Pair<Integer, Integer> end)
@@ -26,10 +26,10 @@ public class Token {
     }
 
     public Token(Token t) {
-        _type = t._type;
-        _value = t._value;
-        _start_pos = t._start_pos;
-        _end_pos = t._end_pos;
+        type = t.type;
+        value = t.value;
+        startPos = t.startPos;
+        endPos = t.endPos;
     }
 
     public Token(){
@@ -38,19 +38,19 @@ public class Token {
 
 
     public String GetValueString() {
-        return _value.toString();
+        return value.toString();
     }
 
     public Pair<Integer, Integer> GetEndPos() {
-        return _end_pos;
+        return endPos;
     }
 
     public Pair<Integer, Integer> GetStartPos() {
-        return _start_pos;
+        return startPos;
     }
 
     public TokenType GetType(){
-        return _type;
+        return type;
     }
 
     @Override

@@ -1,48 +1,66 @@
-import Common.*;
+import Common.OutputType;
 import Compiler.*;
 import Symbol.*;
 
+import argparser.*;
 import java.io.FileReader;
 import java.io.FileWriter;
 
-import static java.awt.PageAttributes.MediaType.C0;
 
 public class Main{
-    private static void print(Object o){
-        System.out.println(o);
-    }
     private static void println(Object o){
         System.out.println(o);
     }
-    private static void output(FileReader input, FileWriter output, OutputType type) {
-        Symbol symbol = new Parser(new Lexer(input).allTokens()).parse()._generate();
-        switch (type) {
-            case ASM: {
-                symbol.outputAssemble(output);
-                break;
-            }
-            /*
-            case BIN: {
-                symbol.outputBinary(output);
-                break;
-            }
-            */
-            default:
-                System.out.println("Output Error");
-                System.exit(-1);
-        }
-    }
-    public static void main(String[] args) {
-        println("This is a test:");
+
+    private static void output (String inputFileName, String outputFileName, OutputType type) {
         try {
-            FileReader fr=new FileReader("src\\test.c0");
-            FileWriter wr=new FileWriter("src\\output.s0");
-            output(fr,wr,OutputType.ASM);
-            wr.flush();
-            wr.close();
+            FileReader input = new FileReader(inputFileName);
+            FileWriter output = new FileWriter(outputFileName);
+            Symbol symbol = new Parser(new Lexer(input).allTokens()).parse()._generate();
+            switch (type) {
+                case ASSEMBLY: {
+                    symbol.outputAssemble(output);
+                    break;
+                }
+                case BINARY: {
+                    symbol.outputBinary(outputFileName);
+                    break;
+                }
+
+                default:
+                    println("Output Error");
+                    System.exit(-1);
+            }
+            output.flush();
+            output.close();
         }catch (Exception e){
             e.printStackTrace();
-            //ErrorMsg.Error("The input file not exist");
         }
+
+    }
+    public static void main(String[] args) {
+        ArgParser program=new ArgParser("CO Compiler");
+        StringHolder outputFileNameStringHolder=new StringHolder();
+        StringHolder inputFileNameStringHolder=new StringHolder();
+        program.addOption("-c %s",inputFileNameStringHolder);
+        program.addOption("-s %s",inputFileNameStringHolder);
+        program.addOption("-o %s",outputFileNameStringHolder);
+        program.matchAllArgs(args);
+
+        String inputFileName="";
+        String outputFileName="out.s0";
+
+        if(inputFileNameStringHolder.value!=null){
+            inputFileName=inputFileNameStringHolder.value;
+            if(outputFileNameStringHolder.value!=null){
+                outputFileName=outputFileNameStringHolder.value;
+            }
+        }else{
+            println("Help");
+        }
+        // Todo: How to divide two different command -c or -s?
+        output(inputFileName,outputFileName,OutputType.ASSEMBLY);
+        //ErrorMsg.Error("The input file not exist");
+        println("Compile finished");
     }
 }

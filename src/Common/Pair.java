@@ -1,5 +1,7 @@
 package Common;
 
+
+// Copy from StackOverflow
 public class Pair<A, B> {
     private A first;
     private B second;

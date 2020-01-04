@@ -1,4 +1,4 @@
-package AbstractStatementTree;
+package AbstractSyntaxTree;
 
 import java.util.ArrayList;
 
@@ -6,6 +6,7 @@ public class StatementAST extends AbstractSyntaxTree{
     private ArrayList<StatementAST> statements;
     private AbstractSyntaxTree singleStatement;
     public StatementAST(){
+        statements=new ArrayList<>();
         singleStatement =null;
     }
 

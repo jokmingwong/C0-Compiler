@@ -1,12 +1,12 @@
-package AbstractStatementTree;
+package AbstractSyntaxTree;
 
 import Common.ErrorMsg;
 import Common.Pair;
 import Symbol.Command;
 
 public class JumpStatementAST extends AbstractSyntaxTree {
-    Pair<Integer, Integer> pos;
-    ExpressionAST returnExpr;
+    private Pair<Integer, Integer> pos;
+    private ExpressionAST returnExpr;
 
     public JumpStatementAST(Pair<Integer, Integer> pos, ExpressionAST returnExpr) {
         this.pos = pos;

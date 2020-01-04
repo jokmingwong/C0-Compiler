@@ -1,6 +1,6 @@
 package Compiler;
 
-import AbstractStatementTree.*;
+import AbstractSyntaxTree.*;
 import Common.ErrorMsg;
 import Common.Pair;
 import Common.Token;
@@ -11,33 +11,35 @@ import java.util.ArrayList;
 import static Common.TokenType.NUL;
 import static Common.TokenType.RIGHT_BRACE;
 
+/**
+ * Change from miniplc0
+ */
+
 public class Parser {
-    private ArrayList<Token> _tokens;
-    private int _offset;
-    private Pair<Integer, Integer> _current_pos;
+    private ArrayList<Token> tokens;
+    private int offset;
+    private Pair<Integer, Integer> currentPos;
     private int _nextTokenIndex;
 
     public Parser(ArrayList<Token> v) {
-        _tokens = v;
-        _offset = 0;
-        _current_pos = new Pair<>(0, 0);
+        tokens = v;
+        offset = 0;
+        currentPos = new Pair<>(0, 0);
         _nextTokenIndex = 0;
     }
 
     private Token nextToken() {
-        if (_offset == _tokens.size())
+        if (offset == tokens.size())
             return new Token();
-        // 考虑到 _tokens[0..._offset-1] 已经被分析过了
-        // 所以我们选择 _tokens[0..._offset-1] 的 EndPos 作为当前位置
-        _current_pos = _tokens.get(_offset).GetEndPos();
-        return _tokens.get(_offset++);
+        currentPos = tokens.get(offset).GetEndPos();
+        return tokens.get(offset++);
     }
 
     private void unreadToken() {
-        if (_offset == 0)
+        if (offset == 0)
             return;
-        _current_pos = _tokens.get(_offset - 1).GetEndPos();
-        _offset--;
+        currentPos = tokens.get(offset - 1).GetEndPos();
+        offset--;
     }
 
     // Interface
@@ -47,27 +49,30 @@ public class Parser {
 
     private ProgramAST parseProgram() {
         ProgramAST pro = new ProgramAST();
-        //变量声明循环
+        // Variable declaration
         while (true) {
+            // ( TOKEN )
             Token first = nextToken();
-            Token second = nextToken();
+            nextToken();
             Token third = nextToken();
             unreadToken();
             unreadToken();
             unreadToken();
             if (first.isEnd()) return pro;
-            //通过第三个token为'('判断是函数定义
-            if (third.GetType() == TokenType.LEFT_PARENT) break;
-            //否则进行变量声明
+
+            // If the third token is '(', assuming it is left parent
+            if (third.GetType() == TokenType.LEFT_PARENT)
+                break;
+
             ArrayList<VariableDeclarationAST> p = parseVariableDeclaration();
-            for (VariableDeclarationAST v : p) pro._add(v);
+            for (VariableDeclarationAST v : p) pro.add(v);
         }
-        //函数定义循环
+        // Function declaration
         while (true) {
             Token first = nextToken();
             unreadToken();
             if (first.isEnd()) return pro;
-            pro._add(parseFunctionDefinition());
+            pro.add(parseFunctionDefinition());
         }
     }
 
@@ -81,22 +86,22 @@ public class Parser {
             isConst = true;
             first = nextToken();
             if (first.isEnd())
-                ErrorMsg.Error("Incomplete declaration");
+                ErrorMsg.Error(first.GetStartPos()+"Incomplete declaration");
         }
         if (first.GetType() == TokenType.INT) {
             while (true) {
                 first = nextToken();
                 if (first.isEnd())
-                    ErrorMsg.Error("Incomplete declaration");
+                    ErrorMsg.Error(first.GetStartPos()+"Incomplete declaration");
 
                 if (first.GetType() != TokenType.IDENTIFIER)
-                    ErrorMsg.Error("Invalid declaration");
+                    ErrorMsg.Error(first.GetStartPos()+"Invalid declaration");
 
 
                 Token second = nextToken();
 
                 if (second.isEnd())
-                    ErrorMsg.Error("No semicolon");
+                    ErrorMsg.Error(first.GetStartPos()+"No semicolon");
 
                 if (second.GetType() == TokenType.ASSIGN_EQUAL) {
                     //如果后面是等号，表示显示初始化，构造变量声明节点
@@ -117,11 +122,11 @@ public class Parser {
                     res.add(p);
                     break;
                 } else {
-                    ErrorMsg.Error("No semicolon");
+                    ErrorMsg.Error(first.GetStartPos()+"No semicolon");
                 }
             }
         } else {
-            ErrorMsg.Error("Invalid specifier");
+            ErrorMsg.Error(first.GetStartPos()+"Invalid specifier");
         }
         return res;
     }
@@ -133,17 +138,17 @@ public class Parser {
         if (first.GetType() == TokenType.VOID || first.GetType() == TokenType.INT) {
             Token identifier = nextToken();
             if (identifier.isEnd())
-                ErrorMsg.Error("Incomplete declaration");
+                ErrorMsg.Error(first.GetStartPos()+"Incomplete declaration");
 
             if (identifier.GetType() != TokenType.IDENTIFIER)
-                ErrorMsg.Error("Invalid declaration");
+                ErrorMsg.Error(first.GetStartPos()+"Invalid declaration");
 
             res.setReturnType(first.GetType());
             res.setIdentifier(identifier);
 
             Token second = nextToken();
             if (second.GetType() != TokenType.LEFT_PARENT) {
-                ErrorMsg.Error("Variable declaration after function");
+                ErrorMsg.Error(first.GetStartPos()+"Variable declaration after function");
 
             }
 
@@ -164,29 +169,30 @@ public class Parser {
                         isConst = true;
                         next = nextToken();
                         if (next.isEnd())
-                            ErrorMsg.Error("Incomplete declaration");
+                            ErrorMsg.Error(first.GetStartPos()+"Incomplete declaration");
                     }
                     if (next.GetType() == TokenType.INT || next.GetType() == TokenType.VOID) {
                         next = nextToken();
                         if (next.GetType() != TokenType.IDENTIFIER) {
-                            ErrorMsg.Error("Incomplete declaration");
+                            ErrorMsg.Error(first.GetStartPos()+"Incomplete declaration");
                         }
                         res.add(new VariableDeclarationAST(isConst, next));
                     } else {
-                        ErrorMsg.Error("Invalid specifier");
+                        ErrorMsg.Error(first.GetStartPos()+"Invalid specifier");
                     }
                     next = nextToken();
                     if (next.GetType() == TokenType.RIGHT_PARENT) break;
-                    else if (next.GetType() == TokenType.COMMA)
+                    else if (next.GetType() == TokenType.COMMA){
                         continue;
+                    }
                     else
-                        ErrorMsg.Error("Invalid declaration");
+                        ErrorMsg.Error(first.GetStartPos()+"Invalid declaration");
                 }
             }
             //处理compound-statement
             res.setCompoundStatements(parseCompoundStatement());
         } else {
-            ErrorMsg.Error("Invalid specifier");
+            ErrorMsg.Error(first.GetStartPos()+"Invalid specifier");
 
         }
         return res;
@@ -239,7 +245,7 @@ public class Parser {
             PrimaryExpressionAST res = new PrimaryExpressionAST(parseExpression());
             Token second = nextToken();
             if (second.GetType() != TokenType.RIGHT_PARENT) {
-                ErrorMsg.Error("Incomplete parenthesis");
+                ErrorMsg.Error(first.GetStartPos()+"Incomplete parenthesis");
             }
             return res;
         } else if (first.GetType() == TokenType.INTEGER) {
@@ -254,7 +260,7 @@ public class Parser {
                 return new PrimaryExpressionAST(first);
             }
         } else {
-            ErrorMsg.Error("Invalid expression");
+            ErrorMsg.Error(first.GetStartPos()+"Invalid expression");
         }
         return null;
     }
@@ -266,7 +272,7 @@ public class Parser {
 
         Token next = nextToken();
         if (next.GetType() != TokenType.LEFT_PARENT)
-            ErrorMsg.Error("Invalid function call");
+            ErrorMsg.Error(next.GetStartPos()+"Invalid function call");
 
         next = nextToken();
         if(next.GetType() != TokenType.RIGHT_PARENT) unreadToken();
@@ -274,7 +280,7 @@ public class Parser {
             res.add(parseExpression());
             next = nextToken();
             if (next.GetType() != TokenType.COMMA && next.GetType() != TokenType.RIGHT_PARENT)
-                ErrorMsg.Error("Invalid function call");
+                ErrorMsg.Error(next.GetStartPos()+"Invalid function call");
         }
         return res;
     }
@@ -283,7 +289,7 @@ public class Parser {
     private CompoundStatementAST parseCompoundStatement() {
         Token first = nextToken();
         if (first.GetType() != TokenType.LEFT_BRACE)
-            ErrorMsg.Error("No left brace");
+            ErrorMsg.Error(first.GetStartPos()+"No left brace");
         CompoundStatementAST res=new CompoundStatementAST();
         while (true) {
             Token next = nextToken();
@@ -353,7 +359,7 @@ public class Parser {
                 } else if (next.GetType() == TokenType.LEFT_PARENT) {
                     res.setSingleStatement(parseFunctionCall());
                 } else {
-                    ErrorMsg.Error("Invalid statement");
+                    ErrorMsg.Error(next.GetStartPos()+"Invalid statement");
                 }
                 break;
             }
@@ -371,9 +377,9 @@ public class Parser {
         nextToken(); //吃掉if
         Token first = nextToken();
         if (first.GetType() != TokenType.LEFT_PARENT)
-            ErrorMsg.Error("Invalid condition");
+            ErrorMsg.Error(first.GetStartPos()+"Invalid condition");
 
-        ExpressionAST left = parseExpression();    //条件成员
+        ExpressionAST left = parseExpression();
         // Not sure the token type
         TokenType type = NUL;
         ExpressionAST right = null;
@@ -388,9 +394,9 @@ public class Parser {
 
         first = nextToken();
         if (first.GetType() != TokenType.RIGHT_PARENT)
-            ErrorMsg.Error("Invalid condition");
+            ErrorMsg.Error(first.GetStartPos()+"Invalid condition");
 
-        StatementAST ifStatement = parseStatement();    //语句成员
+        StatementAST ifStatement = parseStatement();
         StatementAST elseStatement = null;
 
         first = nextToken();
@@ -406,9 +412,9 @@ public class Parser {
         nextToken(); //吃掉while
         Token first = nextToken();
         if (first.GetType() != TokenType.LEFT_PARENT)
-            ErrorMsg.Error("Invalid condition");
+            ErrorMsg.Error(first.GetStartPos()+"Invalid condition");
 
-        ExpressionAST left = parseExpression();    //条件成员
+        ExpressionAST left = parseExpression();
         TokenType type = NUL;
         ExpressionAST right = null;
 
@@ -422,7 +428,7 @@ public class Parser {
 
         first = nextToken();
         if (first.GetType() != TokenType.RIGHT_PARENT)
-            ErrorMsg.Error("Invalid condition");
+            ErrorMsg.Error(first.GetStartPos()+"Invalid condition");
 
         StatementAST loopStatement = parseStatement();
 
@@ -431,7 +437,7 @@ public class Parser {
 
     //返回语句
     private JumpStatementAST parseJumpStatement() {
-        Token r = nextToken();    //吃掉return
+        Token r = nextToken();
         Token first = nextToken();
         if (first.GetType() == TokenType.SEMICOLON) {
             return new JumpStatementAST(r.GetStartPos(),null);
@@ -440,7 +446,7 @@ public class Parser {
             ExpressionAST res = parseExpression();
             first = nextToken();
             if (first.GetType() != TokenType.SEMICOLON)
-                ErrorMsg.Error("No semicolon");
+                ErrorMsg.Error(first.GetStartPos()+"No semicolon");
             return new JumpStatementAST(r.GetStartPos(),res);
         }
     }
@@ -450,7 +456,7 @@ public class Parser {
         nextToken(); // 吃掉print
         Token next = nextToken();
         if (next.GetType() != TokenType.LEFT_PARENT)
-            ErrorMsg.Error("Invalid print");
+            ErrorMsg.Error(next.GetStartPos()+"Invalid print");
 
         PrintStatementAST res=new PrintStatementAST();
 
@@ -460,12 +466,12 @@ public class Parser {
             res.add(parseExpression());
             next = nextToken();
             if (next.GetType() != TokenType.COMMA && next.GetType() != TokenType.RIGHT_PARENT)
-                ErrorMsg.Error("Invalid print");
+                ErrorMsg.Error(next.GetStartPos()+"Invalid print");
         }
 
         next = nextToken();
         if (next.GetType() != TokenType.SEMICOLON)
-            ErrorMsg.Error("No semicolon");
+            ErrorMsg.Error(next.GetStartPos()+"No semicolon");
         return res;
     }
 
@@ -475,21 +481,21 @@ public class Parser {
 
         Token first = nextToken();
         if (first.GetType() != TokenType.LEFT_PARENT)
-            ErrorMsg.Error("Invalid scan");
+            ErrorMsg.Error(first.GetStartPos()+"Invalid scan");
 
         first = nextToken();
         if (first.GetType() != TokenType.IDENTIFIER)
-            ErrorMsg.Error("Invalid scan");
+            ErrorMsg.Error(first.GetStartPos()+"Invalid scan");
 
         Token identifier = first;
 
         first = nextToken();
         if (first.GetType() != TokenType.RIGHT_PARENT)
-            ErrorMsg.Error("Invalid scan");
+            ErrorMsg.Error(first.GetStartPos()+"Invalid scan");
 
         first = nextToken();
         if (first.GetType() != TokenType.SEMICOLON)
-            ErrorMsg.Error("No semicolon");
+            ErrorMsg.Error(first.GetStartPos()+"No semicolon");
 
         return new ScanStatementAST(identifier);
     }
@@ -499,11 +505,11 @@ public class Parser {
         Token identifier = nextToken();
         Token next = nextToken();
         if (next.GetType() != TokenType.ASSIGN_EQUAL)
-            ErrorMsg.Error("Invalid assignment");
+            ErrorMsg.Error(next.GetStartPos()+"Invalid assignment");
         ExpressionAST assignExpr = parseExpression();
         next = nextToken();
         if (next.GetType() != TokenType.SEMICOLON)
-            ErrorMsg.Error("No semicolon");
+            ErrorMsg.Error(next.GetStartPos()+"No semicolon");
 
         return new AssignExpressionAST(identifier, assignExpr);
     }

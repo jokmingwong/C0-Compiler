@@ -1,4 +1,4 @@
-package AbstractStatementTree;
+package AbstractSyntaxTree;
 
 import Common.ErrorMsg;
 import Common.Token;
@@ -71,7 +71,8 @@ public class PrimaryExpressionAST extends AbstractSyntaxTree{
                 expr.generate();
                 break;
             }
-            default:;
+            default:
+                break;
         }
     }
 

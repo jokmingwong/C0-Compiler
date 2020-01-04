@@ -1,4 +1,4 @@
-package AbstractStatementTree;
+package AbstractSyntaxTree;
 
 import Symbol.Command;
 
@@ -27,7 +27,7 @@ public class CompoundStatementAST extends AbstractSyntaxTree{
         if(symbol.isVoid(currentFunc))
             symbol.addCommand(currentFunc,new Command("ret",-1,-1));
         else{
-            symbol.addCommand(currentFunc,new Command("ipush",0,-1));   //UB, 返回值为0
+            symbol.addCommand(currentFunc,new Command("ipush",0,-1));
             symbol.addCommand(currentFunc,new Command("iret",-1,-1));
         }
     }

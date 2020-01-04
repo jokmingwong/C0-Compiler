@@ -1,7 +1,7 @@
 package Symbol;
 
 public class Command {
-    public int arg1,arg2,index;
+    int arg1,arg2,index;
     String command;
     public Command(){}
     public Command(String c,int a1,int a2){

@@ -1,4 +1,4 @@
-int x,y;
+int x=2,y=1;
 int equal()
 {
     if(x-y)
@@ -10,9 +10,10 @@ int equal()
         return (1);
     }
 }
-void main()
+int main()
 {
-    scanf(x);
-    scanf(y);
-    printf(equal());
+    scan(x);
+    scan(y);
+    print(equal());
+    return 0;
 }

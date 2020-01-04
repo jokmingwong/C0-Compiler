@@ -6,7 +6,6 @@ import Common.Token;
 import Common.TokenType;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -388,7 +387,6 @@ public class Lexer {
     }
 
 
-    // TODO:FINISH
     public ArrayList<Token> allTokens() {
         if (!_isInitialized) readAll(reader);
 
@@ -406,7 +404,6 @@ public class Lexer {
         }
     }
 
-    // Todo:debug stream
     private void readAll(FileReader fr) {
         if (_isInitialized)
             return;

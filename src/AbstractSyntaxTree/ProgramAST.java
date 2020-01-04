@@ -1,4 +1,4 @@
-package AbstractStatementTree;
+package AbstractSyntaxTree;
 
 import Symbol.Symbol;
 
@@ -7,11 +7,11 @@ import java.util.ArrayList;
 
 public class ProgramAST extends AbstractSyntaxTree {
     private ArrayList<VariableDeclarationAST>vars;
-    private ArrayList<FunctionDeclarationAST>funcs;
+    private ArrayList<FunctionDeclarationAST> func;
 
     public ProgramAST(){
         vars=new ArrayList<>();
-        funcs=new ArrayList<>();
+        func =new ArrayList<>();
     }
 
     public void generate() {}
@@ -20,17 +20,17 @@ public class ProgramAST extends AbstractSyntaxTree {
     public Symbol _generate(){
         for(VariableDeclarationAST v:vars)
             v.generate();
-        for(FunctionDeclarationAST f:funcs)
+        for(FunctionDeclarationAST f: func)
             f.generate();
         return symbol;
     }
 
-    public void _add(VariableDeclarationAST p){
+    public void add(VariableDeclarationAST p){
         vars.add(p);
     }
 
-    public void _add(FunctionDeclarationAST p){
-        funcs.add(p);
+    public void add(FunctionDeclarationAST p){
+        func.add(p);
     }
 
 }

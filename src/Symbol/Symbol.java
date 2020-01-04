@@ -4,8 +4,13 @@ import Common.ErrorMsg;
 import Common.Pair;
 import Common.TokenType;
 
+import java.io.DataOutputStream;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class Symbol {
     // Define 3 tables to store
@@ -76,7 +81,7 @@ public class Symbol {
         return null;
     }
 
-    public FileWriter outputAssemble(FileWriter output) {
+    public void outputAssemble(FileWriter output) {
         try {
             output.write(".constants:\n");
             for (Function f : functionTable) {
@@ -87,7 +92,8 @@ public class Symbol {
             int index = 0;
             for (Command c : startCode) {
                 index++;
-                output.write(index);
+                String iStr=""+index+"";
+                output.write(iStr);
                 output.write("\t");
                 output.write(c.command);
                 if (c.arg1 != -1) output.write(" " + c.arg1);
@@ -97,8 +103,8 @@ public class Symbol {
 
             output.write(".functions:\n");
             for (Function f : functionTable) {
-                output.write(f.index + ' ' + f.index + ' ');
-                output.write(f.parametersNum + ' ' + 1 + "\n");
+                output.write(f.index + " " + f.index + " ");
+                output.write(f.parametersNum + " " + "1" + "\n");
             }
             for (Function f : functionTable) {
                 output.write(".F" + f.index + ":\n");
@@ -110,11 +116,18 @@ public class Symbol {
                     output.write("\n");
                 }
             }
-            return output;
         }catch (Exception e){
             ErrorMsg.Error("Output assembly error");
         }
-        return null;
+    }
+
+    private ArrayList<Byte> int2bytes(int length , int target){
+        ArrayList<Byte> bytes = new ArrayList<>();
+        int start = 24;
+        for(int i = 0 ; i < length; i++){
+            bytes.add((byte) (( target >> ( start - i * 8 )) & 0xFF ));
+        }
+        return bytes;
     }
 
     public void getVariableTable() {
@@ -132,12 +145,96 @@ public class Symbol {
         print('\n');
     }
 
-    // Todo:How to solve binary file?
-    /*
-    public StringBuilder outputBinary(StringBuilder output) {
 
+    // Todo:How to solve binary file?
+    public void outputBinary(String outputFileName) {
+        ArrayList<Byte> output = new ArrayList<>();
+
+        // Add magic number
+        ArrayList<Byte> magic = int2bytes(4, 0x43303A29);
+        output.addAll(magic);
+
+        // Add version
+        ArrayList<Byte> version = int2bytes(4, 0x01);
+        output.addAll(version);
+
+        // Add constant count
+        ArrayList<Byte> constantsCount = int2bytes(2, functionTable.size());
+        output.addAll(constantsCount);
+
+        // Constant
+        for(Function f:functionTable){
+            output.addAll(int2bytes(1,0x00));
+            output.addAll(int2bytes(2,f.name.length()));
+            //output.addAll(int2bytes(f.name.length(),f.name.toCharArray()))
+            ArrayList<Byte>valueByteArrayList=new ArrayList<>();
+            byte[] valueBytes = f.name.getBytes(StandardCharsets.US_ASCII);
+            for (Byte b : valueBytes){
+                valueByteArrayList.add(b);
+            }
+            output.addAll(valueByteArrayList);
+        }
+
+        // Start code count
+        output.addAll(int2bytes(2,startCode.size()));
+
+        // Start code
+        for(Command c:startCode){
+            Pair<Integer, Pair<Integer, Integer>> command=getCommandHex(c.command);
+            output.addAll(int2bytes(1, command.getFirst()));
+            if(c.arg1!=-1){
+                if(command.getSecond().getFirst()==1)
+                    output.addAll(int2bytes(1,c.arg1));
+                else if(command.getSecond().getFirst()==2){
+                    output.addAll(int2bytes(2,c.arg1));
+                }else if(command.getSecond().getFirst()==4){
+                    output.addAll(int2bytes(4,c.arg2));
+                }
+            }
+            if(c.arg2!=-1){
+                output.addAll(int2bytes(4,c.arg2));
+            }
+        }
+
+        // Function count
+        output.addAll(int2bytes(2,functionTable.size()));
+
+        // Function
+        for(Function f:functionTable){
+            output.addAll(int2bytes(2,f.index));
+            output.addAll(int2bytes(2,f.parametersNum));
+            output.addAll(int2bytes(2,1));
+            output.addAll(int2bytes(2,f.commandArrayList.size()));
+
+            // Command
+            for(Command c:f.commandArrayList){
+                Pair<Integer,Pair<Integer,Integer>>command=getCommandHex(c.command);
+                output.addAll(int2bytes(1,command.getFirst()));
+                if(c.arg1!=-1){
+                    if(command.getSecond().getFirst()==1){
+                        output.addAll(int2bytes(1,c.arg1));
+                    }else if(command.getSecond().getFirst()==2){
+                        output.addAll(int2bytes(2,c.arg1));
+                    }else if(command.getSecond().getFirst()==4){
+                        output.addAll(int2bytes(4,c.arg1));
+                    }
+                }
+                if(c.arg2!=-1){
+                    output.addAll(int2bytes(4,c.arg2));
+                }
+            }
+        }
+        try {
+            DataOutputStream out = new DataOutputStream(new FileOutputStream(outputFileName, true));
+            byte[] temp=new byte[output.size()];
+            for(int i=0;i<output.size();i++){
+                temp[i]=output.get(i);
+            }
+            out.write(temp);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
-    */
 
     public int getVariableIndex(String varName, String funcName) {
         for (Variable v : variableTable)
@@ -213,7 +310,7 @@ public class Symbol {
         return -1;
     }
 
-    public void fillback(String name, int index, int newX1, int newX2) {
+    public void fillBack(String name, int index, int newX1, int newX2) {
         for (Function f : functionTable)
         if (f.name.equals(name)) {
             f.commandArrayList.get(index).arg1 = newX1;

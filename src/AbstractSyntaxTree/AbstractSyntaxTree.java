@@ -1,7 +1,8 @@
-package AbstractStatementTree;
+package AbstractSyntaxTree;
 
 import Symbol.Symbol;
 
+// Use AST to general code
 public abstract class AbstractSyntaxTree {
     void generate(){}
     public static void print(Object o){
@@ -9,7 +10,7 @@ public abstract class AbstractSyntaxTree {
     }
 
     public static String currentFunc="";
-    public static int level=0;
+    static int level=0;
     public static Symbol symbol=new Symbol();
-    public static String passParameters="";
+    static String passParameters="";
 }
